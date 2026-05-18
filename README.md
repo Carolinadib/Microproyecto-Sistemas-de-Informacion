@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # microproyecto_buscaminas
 
 A new Flutter project.
@@ -15,3 +16,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# Microproyecto-Sistemas-de-Informacion
+Integrantes: Carolina Dib y Natalio Djandji
+>>>>>>> b7fe7fb61c628087e097a4a45f39e549860f96ca

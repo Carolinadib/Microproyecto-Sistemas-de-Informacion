@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
+import 'dart:async';
+import '../models/cell_model.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -8,10 +11,229 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  // Configuración inicial (Dificultad Media: 8x8)
   int rows = 8;
   int cols = 8;
-  int totalMines = 20;
+  int totalMines = 10;
+  
+  late List<List<CellModel>> board;
+  bool isGameOver = false;
+  bool isFirstClick = true;
+
+  Timer? _timer;
+  int _secondsElapsed = 0;
+  int flagsPlaced = 0; // Nueva variable para contar las banderas
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeEmptyBoard();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _initializeEmptyBoard() {
+    board = List.generate(
+      rows, (r) => List.generate(cols, (c) => CellModel(row: r, col: c)),
+    );
+    isGameOver = false;
+    isFirstClick = true;
+    _secondsElapsed = 0;
+    flagsPlaced = 0;
+    _timer?.cancel();
+  }
+
+  void _placeMinesAndCalculate(int safeRow, int safeCol) {
+    int minesPlaced = 0;
+    Random random = Random();
+    
+    while (minesPlaced < totalMines) {
+      int r = random.nextInt(rows);
+      int c = random.nextInt(cols);
+      
+      if (!board[r][c].hasMine && (r != safeRow || c != safeCol)) {
+        board[r][c].hasMine = true;
+        minesPlaced++;
+      }
+    }
+
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (!board[r][c].hasMine) {
+          board[r][c].adjacentMines = _countAdjacentMines(r, c);
+        }
+      }
+    }
+  }
+
+  int _countAdjacentMines(int r, int c) {
+    int count = 0;
+    for (int i = -1; i <= 1; i++) {
+      for (int j = -1; j <= 1; j++) {
+        int newRow = r + i;
+        int newCol = c + j;
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+          if (board[newRow][newCol].hasMine) count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _secondsElapsed++;
+      });
+    });
+  }
+
+  String get _formattedTime {
+    int minutes = _secondsElapsed ~/ 60;
+    int seconds = _secondsElapsed % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  // Lógica para colocar o quitar banderas
+  void _toggleFlag(CellModel cell) {
+    if (isGameOver || cell.isRevealed) return;
+
+    setState(() {
+      cell.isFlagged = !cell.isFlagged;
+      cell.isFlagged ? flagsPlaced++ : flagsPlaced--;
+    });
+  }
+
+  void _revealCell(CellModel cell) {
+    if (isGameOver || cell.isRevealed || cell.isFlagged) return;
+
+    if (isFirstClick) {
+      isFirstClick = false;
+      _placeMinesAndCalculate(cell.row, cell.col);
+      _startTimer();
+    }
+
+    setState(() {
+      cell.isRevealed = true;
+
+      if (cell.hasMine) {
+        isGameOver = true;
+        _timer?.cancel();
+        _revealAll();
+        _showEndGameDialog(false); // Mostramos modal de derrota
+      } else {
+        if (cell.adjacentMines == 0) {
+          _floodFill(cell.row, cell.col);
+        }
+        _checkWinCondition(); // Verificamos si ganamos
+      }
+    });
+  }
+
+  void _floodFill(int r, int c) {
+    for (int i = -1; i <= 1; i++) {
+      for (int j = -1; j <= 1; j++) {
+        int newRow = r + i;
+        int newCol = c + j;
+        
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+          CellModel neighbor = board[newRow][newCol];
+          if (!neighbor.isRevealed && !neighbor.hasMine && !neighbor.isFlagged) {
+            neighbor.isRevealed = true;
+            if (neighbor.adjacentMines == 0) {
+              _floodFill(newRow, newCol);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void _revealAll() {
+    for (var row in board) {
+      for (var cell in row) {
+        cell.isRevealed = true;
+      }
+    }
+  }
+
+  // Verifica si el jugador reveló todas las casillas sin minas
+  void _checkWinCondition() {
+    int revealedCount = 0;
+    for (var row in board) {
+      for (var cell in row) {
+        if (cell.isRevealed) revealedCount++;
+      }
+    }
+    
+    if ((rows * cols) - revealedCount == totalMines) {
+      isGameOver = true;
+      _timer?.cancel();
+      _showEndGameDialog(true); // Mostramos modal de victoria
+    }
+  }
+
+  // Modal para anunciar Victoria o Derrota
+  void _showEndGameDialog(bool isWin) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(isWin ? '¡Ganaste! 🏆' : '¡Fin del Juego! 💥', textAlign: TextAlign.center),
+          content: Text(
+            isWin 
+              ? 'Despejaste el campo en $_formattedTime.\n¡Excelente trabajo!' 
+              : 'Pisaste una mina.\n¡Mejor suerte la próxima vez!',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Cierra modal
+                Navigator.pop(context); // Vuelve al menú
+              },
+              child: const Text('Menú Principal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _initializeEmptyBoard();
+                });
+              },
+              child: const Text('Jugar de nuevo'),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  // Dibuja el contenido de la celda (bandera, mina o número)
+  Widget? _buildCellContent(CellModel cell) {
+    if (cell.isFlagged) {
+      return const Text('🚩', style: TextStyle(fontSize: 24));
+    }
+    if (cell.isRevealed) {
+      if (cell.hasMine) return const Text('💣', style: TextStyle(fontSize: 24));
+      if (cell.adjacentMines > 0) {
+        return Text(
+          '${cell.adjacentMines}',
+          style: TextStyle(
+            fontSize: 24, 
+            fontWeight: FontWeight.bold,
+            color: _getNumberColor(cell.adjacentMines),
+          ),
+        );
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,23 +244,21 @@ class _GameScreenState extends State<GameScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      // SafeArea evita que el tablero se esconda detrás del notch del celular
       body: SafeArea(
         child: Column(
           children: [
-            // Cabecera con contadores (Minas y Tiempo)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildCounter(Icons.flag, totalMines.toString(), Colors.red),
-                  _buildCounter(Icons.timer, '00:00', Colors.blue),
+                  // Ahora resta las banderas colocadas del total de minas
+                  _buildCounter(Icons.flag, (totalMines - flagsPlaced).toString(), Colors.red),
+                  _buildCounter(Icons.timer, _formattedTime, Colors.blue),
                 ],
               ),
             ),
             
-            // El Tablero de Juego
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -46,7 +266,7 @@ class _GameScreenState extends State<GameScreen> {
                   child: AspectRatio(
                     aspectRatio: cols / rows,
                     child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(), // Evita que se haga scroll
+                      physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: cols,
                         crossAxisSpacing: 2,
@@ -54,15 +274,24 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       itemCount: rows * cols,
                       itemBuilder: (context, index) {
+                        int r = index ~/ cols;
+                        int c = index % cols;
+                        CellModel cell = board[r][c];
+
                         return GestureDetector(
-                          onTap: () {
-                            // Aquí irá la lógica al hacer clic en una casilla
-                            print('Clic en la casilla $index');
-                          },
+                          onTap: () => _revealCell(cell),
+                          onSecondaryTap: () => _toggleFlag(cell), // Clic derecho en Web
+                          onLongPress: () => _toggleFlag(cell), // Presión larga en Celular
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColorDark,
+                              color: cell.isRevealed 
+                                  ? Theme.of(context).cardColor 
+                                  : Theme.of(context).primaryColorDark,
                               borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                            ),
+                            child: Center(
+                              child: _buildCellContent(cell),
                             ),
                           ),
                         );
@@ -78,7 +307,17 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Widget de ayuda para los contadores superiores
+  Color _getNumberColor(int minas) {
+    switch (minas) {
+      case 1: return Colors.blue;
+      case 2: return Colors.green;
+      case 3: return Colors.red;
+      case 4: return Colors.purple;
+      case 5: return Colors.orange;
+      default: return Colors.teal;
+    }
+  }
+
   Widget _buildCounter(IconData icon, String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

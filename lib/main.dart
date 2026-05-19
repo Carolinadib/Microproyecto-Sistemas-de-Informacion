@@ -13,7 +13,7 @@ class BuscaminasApp extends StatelessWidget {
     return MaterialApp(
       title: 'Buscaminas',
       debugShowCheckedModeBanner: false, 
-      [span_6](start_span)themeMode: ThemeMode.system, // Tema automático[span_6](end_span)
+      themeMode: ThemeMode.system, // Tema automático
       theme: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.blue,

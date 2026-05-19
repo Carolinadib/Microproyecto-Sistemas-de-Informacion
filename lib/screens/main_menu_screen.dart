@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'game_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -19,7 +20,15 @@ class MainMenuScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 40),
-            FadeInLeft(delay: const Duration(milliseconds: 200), child: _menuButton('🕹️ Jugar', Colors.green, () {})),
+            FadeInLeft(
+  delay: const Duration(milliseconds: 200), 
+  child: _menuButton('🕹️ Jugar', Colors.green, () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GameScreen()),
+    );
+  }),
+),
             FadeInRight(delay: const Duration(milliseconds: 400), child: _menuButton('🏆 Marcadores', Colors.orange, () {})),
             FadeInLeft(delay: const Duration(milliseconds: 600), child: _menuButton('⚙️ Configuración', Colors.blue, () {})),
             FadeInRight(delay: const Duration(milliseconds: 800), child: _menuButton('📖 Instrucciones', Colors.purple, () {})),

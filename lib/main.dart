@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Asegúrate de importar tus pantallas correctamente aquí:
 import 'screens/splash_screen.dart';
+import 'package:flutter/services.dart';
+
 
 // 1. Creamos un notificador global que toda la app puede escuchar
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
@@ -9,6 +10,8 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 void main() async {
   // 2. Nos aseguramos de que Flutter esté listo antes de leer las preferencias
   WidgetsFlutterBinding.ensureInitialized();
+
+  BrowserContextMenu.disableContextMenu(); 
  
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkMode') ?? false;

@@ -30,7 +30,7 @@ class BuscaminasApp extends StatelessWidget {
     // 3. ValueListenableBuilder reconstruye la app cada vez que el notificador cambia
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
-      builder: (_, ThemeMode currentMode, __) {
+      builder: (_, ThemeMode currentMode, _) {
         return MaterialApp(
           title: 'Buscaminas PWA',
           debugShowCheckedModeBanner: false,

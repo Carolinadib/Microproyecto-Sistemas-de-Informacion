@@ -66,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Card(
               child: ValueListenableBuilder<ThemeMode>(
                 valueListenable: themeNotifier,
-                builder: (_, ThemeMode currentMode, __) {
+                builder: (_, ThemeMode currentMode, _) {
                   bool isDarkMode = currentMode == ThemeMode.dark;
                   return SwitchListTile(
                     title: const Text('Modo Oscuro', style: TextStyle(fontWeight: FontWeight.bold)),

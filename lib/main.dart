@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 1. Añadimos los servicios de Flutter
 import 'screens/splash_screen.dart';
 
 void main() {
+  // 2. Nos aseguramos de que Flutter esté inicializado antes de pedirle cambios al sistema
+  WidgetsFlutterBinding.ensureInitialized(); 
+  
+  // 3. Apagamos el menú de clic derecho del navegador
+  BrowserContextMenu.disableContextMenu(); 
+  
   runApp(const BuscaminasApp());
 }
 

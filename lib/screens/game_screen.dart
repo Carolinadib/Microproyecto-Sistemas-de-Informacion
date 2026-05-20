@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cell_model.dart';
 
 class GameScreen extends StatefulWidget {
@@ -18,21 +19,45 @@ class _GameScreenState extends State<GameScreen> {
   late List<List<CellModel>> board;
   bool isGameOver = false;
   bool isFirstClick = true;
+  bool isLoading = true;
 
   Timer? _timer;
   int _secondsElapsed = 0;
-  int flagsPlaced = 0; // Nueva variable para contar las banderas
+  int flagsPlaced = 0;
 
   @override
   void initState() {
     super.initState();
-    _initializeEmptyBoard();
+    _loadDifficultyAndInit();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadDifficultyAndInit() async {
+    final prefs = await SharedPreferences.getInstance();
+    String diff = prefs.getString('difficulty') ?? 'Medio';
+
+    setState(() {
+      if (diff == 'Fácil') {
+        rows = 6;
+        cols = 6;
+        totalMines = 6;
+      } else if (diff == 'Difícil') {
+        rows = 10;
+        cols = 10;
+        totalMines = 20;
+      } else {
+        rows = 8;
+        cols = 8;
+        totalMines = 10;
+      }
+      _initializeEmptyBoard();
+      isLoading = false;
+    });
   }
 
   void _initializeEmptyBoard() {
@@ -97,7 +122,6 @@ class _GameScreenState extends State<GameScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  // Lógica para colocar o quitar banderas
   void _toggleFlag(CellModel cell) {
     if (isGameOver || cell.isRevealed) return;
 
@@ -123,12 +147,12 @@ class _GameScreenState extends State<GameScreen> {
         isGameOver = true;
         _timer?.cancel();
         _revealAll();
-        _showEndGameDialog(false); // Mostramos modal de derrota
+        _showEndGameDialog(false);
       } else {
         if (cell.adjacentMines == 0) {
           _floodFill(cell.row, cell.col);
         }
-        _checkWinCondition(); // Verificamos si ganamos
+        _checkWinCondition();
       }
     });
   }
@@ -160,8 +184,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // Verifica si el jugador reveló todas las casillas sin minas
-  void _checkWinCondition() {
+  void _checkWinCondition() async {
     int revealedCount = 0;
     for (var row in board) {
       for (var cell in row) {
@@ -172,11 +195,21 @@ class _GameScreenState extends State<GameScreen> {
     if ((rows * cols) - revealedCount == totalMines) {
       isGameOver = true;
       _timer?.cancel();
-      _showEndGameDialog(true); // Mostramos modal de victoria
+      
+      // Lógica para guardar el récord
+      final prefs = await SharedPreferences.getInstance();
+      String currentDiff = prefs.getString('difficulty') ?? 'Medio';
+      String key = 'score_$currentDiff';
+      int? previousBest = prefs.getInt(key);
+      
+      if (previousBest == null || _secondsElapsed < previousBest) {
+        await prefs.setInt(key, _secondsElapsed);
+      }
+
+      _showEndGameDialog(true);
     }
   }
 
-  // Modal para anunciar Victoria o Derrota
   void _showEndGameDialog(bool isWin) {
     showDialog(
       context: context,
@@ -194,8 +227,8 @@ class _GameScreenState extends State<GameScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Cierra modal
-                Navigator.pop(context); // Vuelve al menú
+                Navigator.pop(context);
+                Navigator.pop(context);
               },
               child: const Text('Menú Principal'),
             ),
@@ -214,11 +247,8 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Dibuja el contenido de la celda (bandera, mina o número)
   Widget? _buildCellContent(CellModel cell) {
-    if (cell.isFlagged) {
-      return const Text('🚩', style: TextStyle(fontSize: 24));
-    }
+    if (cell.isFlagged) return const Text('🚩', style: TextStyle(fontSize: 24));
     if (cell.isRevealed) {
       if (cell.hasMine) return const Text('💣', style: TextStyle(fontSize: 24));
       if (cell.adjacentMines > 0) {
@@ -233,78 +263,6 @@ class _GameScreenState extends State<GameScreen> {
       }
     }
     return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buscaminas', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Ahora resta las banderas colocadas del total de minas
-                  _buildCounter(Icons.flag, (totalMines - flagsPlaced).toString(), Colors.red),
-                  _buildCounter(Icons.timer, _formattedTime, Colors.blue),
-                ],
-              ),
-            ),
-            
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: cols / rows,
-                    child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: cols,
-                        crossAxisSpacing: 2,
-                        mainAxisSpacing: 2,
-                      ),
-                      itemCount: rows * cols,
-                      itemBuilder: (context, index) {
-                        int r = index ~/ cols;
-                        int c = index % cols;
-                        CellModel cell = board[r][c];
-
-                        return GestureDetector(
-                          onTap: () => _revealCell(cell),
-                          onSecondaryTap: () => _toggleFlag(cell), // Clic derecho en Web
-                          onLongPress: () => _toggleFlag(cell), // Presión larga en Celular
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: cell.isRevealed 
-                                  ? Theme.of(context).cardColor 
-                                  : Theme.of(context).primaryColorDark,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: Colors.grey.withOpacity(0.5)),
-                            ),
-                            child: Center(
-                              child: _buildCellContent(cell),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Color _getNumberColor(int minas) {
@@ -332,6 +290,81 @@ class _GameScreenState extends State<GameScreen> {
           const SizedBox(width: 8),
           Text(text, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Buscaminas', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildCounter(Icons.flag, (totalMines - flagsPlaced).toString(), Colors.red),
+                  _buildCounter(Icons.timer, _formattedTime, Colors.blue),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: cols / rows,
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: cols,
+                        crossAxisSpacing: 2,
+                        mainAxisSpacing: 2,
+                      ),
+                      itemCount: rows * cols,
+                      itemBuilder: (context, index) {
+                        int r = index ~/ cols;
+                        int c = index % cols;
+                        CellModel cell = board[r][c];
+
+                        return GestureDetector(
+                          onTap: () => _revealCell(cell),
+                          onSecondaryTap: () => _toggleFlag(cell),
+                          onLongPress: () => _toggleFlag(cell),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: cell.isRevealed 
+                                  ? Theme.of(context).cardColor 
+                                  : Theme.of(context).primaryColorDark,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                            ),
+                            child: Center(
+                              child: _buildCellContent(cell),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

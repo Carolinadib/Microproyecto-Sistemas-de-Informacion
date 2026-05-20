@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
+import 'scores_screen.dart';
+import 'instructions_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -33,10 +35,12 @@ class MainMenuScreen extends StatelessWidget {
               }),
             ),
             
-            // Botón 2: Marcadores (Naranja) - Por ahora no hace nada
+            // Botón 2: Marcadores (Naranja)
             FadeInRight(
               delay: const Duration(milliseconds: 400), 
-              child: _menuButton('🏆 Marcadores', Colors.orange, () {})
+              child: _menuButton('🏆 Marcadores', Colors.orange, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const ScoresScreen()));
+              })
             ),
             
             // Botón 3: Configuración (Azul)
@@ -50,10 +54,12 @@ class MainMenuScreen extends StatelessWidget {
               }),
             ),
             
-            // Botón 4: Instrucciones (Morado) - Por ahora no hace nada
+             // Botón 4: Instrucciones (Morado)
             FadeInRight(
               delay: const Duration(milliseconds: 800), 
-              child: _menuButton('📖 Instrucciones', Colors.purple, () {})
+              child: _menuButton('📖 Instrucciones', Colors.purple, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructionsScreen()));
+              })
             ),
           ],
         ),

@@ -335,11 +335,29 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
+            appBar: AppBar(
         title: const Text('Buscaminas', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          // Botón de Debug para probar el juego
+          IconButton(
+            icon: const Icon(Icons.bug_report, color: Colors.amber),
+            tooltip: 'Modo Debug (Revelar Minas)',
+            onPressed: () {
+              setState(() {
+                for (var row in board) {
+                  for (var cell in row) {
+                    if (cell.hasMine) {
+                      cell.isRevealed = !cell.isRevealed;
+                    }
+                  }
+                }
+              });
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(

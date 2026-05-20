@@ -21,25 +21,47 @@ class MainMenuScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 40),
+            
+            // Botón 1: Jugar (Verde)
             FadeInLeft(
-  delay: const Duration(milliseconds: 600), 
-  child: _menuButton('⚙️ Configuración', Colors.blue, () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const SettingsScreen()),
-    );
-  }),
-),
-            FadeInRight(delay: const Duration(milliseconds: 400), child: _menuButton('🏆 Marcadores', Colors.orange, () {})),
-            FadeInLeft(delay: const Duration(milliseconds: 600), child: _menuButton('⚙️ Configuración', Colors.blue, () {})),
-            FadeInRight(delay: const Duration(milliseconds: 800), child: _menuButton('📖 Instrucciones', Colors.purple, () {})),
+              delay: const Duration(milliseconds: 200), 
+              child: _menuButton('🕹️ Jugar', Colors.green, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const GameScreen()),
+                );
+              }),
+            ),
+            
+            // Botón 2: Marcadores (Naranja) - Por ahora no hace nada
+            FadeInRight(
+              delay: const Duration(milliseconds: 400), 
+              child: _menuButton('🏆 Marcadores', Colors.orange, () {})
+            ),
+            
+            // Botón 3: Configuración (Azul)
+            FadeInLeft(
+              delay: const Duration(milliseconds: 600), 
+              child: _menuButton('⚙️ Configuración', Colors.blue, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              }),
+            ),
+            
+            // Botón 4: Instrucciones (Morado) - Por ahora no hace nada
+            FadeInRight(
+              delay: const Duration(milliseconds: 800), 
+              child: _menuButton('📖 Instrucciones', Colors.purple, () {})
+            ),
           ],
         ),
       ),
     );
   }
 
-  // Widget personalizado para hacer los botones uniformes y grandes
+  // Widget personalizado para hacer los botones uniformes
   Widget _menuButton(String text, Color color, VoidCallback onPressed) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),

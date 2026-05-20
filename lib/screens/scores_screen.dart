@@ -28,6 +28,40 @@ class _ScoresScreenState extends State<ScoresScreen> {
     });
   }
 
+  // Elimina todos los registros locales de almacenamiento
+  Future<void> _clearAllScores() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('score_Fácil');
+    await prefs.remove('score_Medio');
+    await prefs.remove('score_Difícil');
+    _loadScores(); // Recarga la vista limpia
+  }
+
+  // Muestra cuadro de confirmación para evitar borrados accidentales
+  void _showClearConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Borrar todos los marcadores?'),
+        content: const Text('Esta acción eliminará de forma permanente tus récords locales.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              _clearAllScores();
+              Navigator.pop(context);
+            },
+            child: const Text('Borrar todo', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   String formatTime(int? seconds) {
     if (seconds == null) return 'Sin registro';
     int m = seconds ~/ 60;
@@ -37,19 +71,49 @@ class _ScoresScreenState extends State<ScoresScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Evalúa si no existe ningún puntaje guardado actualmente
+    bool hasNoScores = bestTimeFacil == null && bestTimeMedio == null && bestTimeDificil == null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('🏆 Marcadores')),
+      appBar: AppBar(
+        title: const Text('🏆 Marcadores'),
+        centerTitle: true,
+        actions: [
+          if (!hasNoScores)
+            IconButton(
+              icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+              tooltip: 'Borrar marcadores',
+              onPressed: _showClearConfirmationDialog,
+            )
+        ],
+      ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Mejores Tiempos', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            _scoreCard('Fácil (6x6)', bestTimeFacil, Colors.green),
-            _scoreCard('Medio (8x8)', bestTimeMedio, Colors.orange),
-            _scoreCard('Difícil (10x10)', bestTimeDificil, Colors.red),
-          ],
-        ),
+        child: hasNoScores
+            ? Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.emoji_events_outlined, size: 80, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Aún no tienes registros. ¡Juega tu primera partida!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Mejores Tiempos', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  _scoreCard('Fácil (6×6)', bestTimeFacil, Colors.green),
+                  _scoreCard('Medio (8×8)', bestTimeMedio, Colors.orange),
+                  _scoreCard('Difícil (10×10)', bestTimeDificil, Colors.red),
+                ],
+              ),
       ),
     );
   }

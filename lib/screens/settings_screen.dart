@@ -9,7 +9,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _selectedDifficulty = 'Medio'; // Valor por defecto
+  String _selectedDifficulty = 'Medio';
+  String _selectedStyle = 'Clásico'; // Almacena el estilo visual de los números
 
   @override
   void initState() {
@@ -17,20 +18,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
-  // Carga la dificultad guardada previamente
+  // Carga las preferencias guardadas localmente
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _selectedDifficulty = prefs.getString('difficulty') ?? 'Medio';
+      _selectedStyle = prefs.getString('number_style') ?? 'Clásico';
     });
   }
 
-  // Guarda la nueva dificultad seleccionada
+  // Guarda la dificultad seleccionada
   Future<void> _saveDifficulty(String difficulty) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('difficulty', difficulty);
     setState(() {
       _selectedDifficulty = difficulty;
+    });
+  }
+
+  // Guarda el estilo visual seleccionado
+  Future<void> _saveStyle(String style) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('number_style', style);
+    setState(() {
+      _selectedStyle = style;
     });
   }
 
@@ -41,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Configuración'),
         centerTitle: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,19 +66,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   RadioListTile<String>(
-                    title: const Text('Fácil (6x6 - 6 Minas)'),
+                    title: const Text('Fácil (6×6 - 10 Minas)'),
                     value: 'Fácil',
                     groupValue: _selectedDifficulty,
                     onChanged: (value) => _saveDifficulty(value!),
                   ),
                   RadioListTile<String>(
-                    title: const Text('Medio (8x8 - 10 Minas)'),
+                    title: const Text('Medio (8×8 - 20 Minas)'),
                     value: 'Medio',
                     groupValue: _selectedDifficulty,
                     onChanged: (value) => _saveDifficulty(value!),
                   ),
                   RadioListTile<String>(
-                    title: const Text('Difícil (10x10 - 20 Minas)'),
+                    title: const Text('Difícil (10×10 - 30 Minas)'),
                     value: 'Difícil',
                     groupValue: _selectedDifficulty,
                     onChanged: (value) => _saveDifficulty(value!),
@@ -76,6 +87,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            const Text(
+              'Estilos de Visualización de Números',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('Clásico (Colores estándar)'),
+                    value: 'Clásico',
+                    groupValue: _selectedStyle,
+                    onChanged: (value) => _saveStyle(value!),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Colorido (Paleta más vibrante)'),
+                    value: 'Colorido',
+                    groupValue: _selectedStyle,
+                    onChanged: (value) => _saveStyle(value!),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Retro (Estilo pixel con colores opacos)'),
+                    value: 'Retro',
+                    groupValue: _selectedStyle,
+                    onChanged: (value) => _saveStyle(value!),
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Minimalista (Números limpios en un solo color)'),
+                    value: 'Minimalista',
+                    groupValue: _selectedStyle,
+                    onChanged: (value) => _saveStyle(value!),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

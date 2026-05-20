@@ -14,12 +14,13 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   int rows = 8;
   int cols = 8;
-  int totalMines = 10;
+  int totalMines = 20; // Ajustado a los requerimientos oficiales
   
   late List<List<CellModel>> board;
   bool isGameOver = false;
   bool isFirstClick = true;
   bool isLoading = true;
+  String numberStyle = 'Clásico'; // Nuevo: Estilo de visualización cargado
 
   Timer? _timer;
   int _secondsElapsed = 0;
@@ -40,20 +41,21 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _loadDifficultyAndInit() async {
     final prefs = await SharedPreferences.getInstance();
     String diff = prefs.getString('difficulty') ?? 'Medio';
+    numberStyle = prefs.getString('number_style') ?? 'Clásico';
 
     setState(() {
       if (diff == 'Fácil') {
         rows = 6;
         cols = 6;
-        totalMines = 6;
+        totalMines = 10; // Especificación oficial
       } else if (diff == 'Difícil') {
         rows = 10;
         cols = 10;
-        totalMines = 20;
+        totalMines = 30; // Especificación oficial
       } else {
         rows = 8;
         cols = 8;
-        totalMines = 10;
+        totalMines = 20; // Especificación oficial
       }
       _initializeEmptyBoard();
       isLoading = false;
@@ -196,7 +198,6 @@ class _GameScreenState extends State<GameScreen> {
       isGameOver = true;
       _timer?.cancel();
       
-      // Lógica para guardar el récord
       final prefs = await SharedPreferences.getInstance();
       String currentDiff = prefs.getString('difficulty') ?? 'Medio';
       String key = 'score_$currentDiff';
@@ -247,25 +248,44 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget? _buildCellContent(CellModel cell) {
-    if (cell.isFlagged) return const Text('🚩', style: TextStyle(fontSize: 24));
-    if (cell.isRevealed) {
-      if (cell.hasMine) return const Text('💣', style: TextStyle(fontSize: 24));
-      if (cell.adjacentMines > 0) {
-        return Text(
-          '${cell.adjacentMines}',
-          style: TextStyle(
-            fontSize: 24, 
-            fontWeight: FontWeight.bold,
-            color: _getNumberColor(cell.adjacentMines),
-          ),
-        );
-      }
+  // Lógica de adaptación de fuentes según la configuración de visualización
+  TextStyle _getNumberStyle(int minas) {
+    FontWeight weight = FontWeight.bold;
+    if (numberStyle == 'Retro') {
+      weight = FontWeight.w900; // Aspecto pesado y pixelado simulado
+    } else if (numberStyle == 'Minimalista') {
+      weight = FontWeight.w300; // Aspecto ultra delgado y limpio
     }
-    return null;
+    return TextStyle(
+      fontSize: 24, 
+      fontWeight: weight,
+      color: _getNumberColor(minas),
+    );
   }
 
+  // Lógica de adaptación de color según la configuración elegida
   Color _getNumberColor(int minas) {
+    if (numberStyle == 'Minimalista') return Colors.blueGrey[700]!; // Color homogéneo
+    
+    if (numberStyle == 'Colorido') {
+      switch (minas) {
+        case 1: return Colors.cyanAccent[700]!;
+        case 2: return Colors.lime[700]!;
+        case 3: return Colors.pinkAccent;
+        case 4: return Colors.amber[800]!;
+        default: return Colors.purpleAccent;
+      }
+    }
+    
+    if (numberStyle == 'Retro') {
+      switch (minas) {
+        case 1: return Colors.blue[900]!;
+        case 2: return Colors.green[900]!;
+        default: return Colors.red[900]!; // Paleta opaca y limitada
+      }
+    }
+
+    // Estilo Clásico tradicional
     switch (minas) {
       case 1: return Colors.blue;
       case 2: return Colors.green;
@@ -274,6 +294,20 @@ class _GameScreenState extends State<GameScreen> {
       case 5: return Colors.orange;
       default: return Colors.teal;
     }
+  }
+
+  Widget? _buildCellContent(CellModel cell) {
+    if (cell.isFlagged) return const Text('🚩', style: TextStyle(fontSize: 24));
+    if (cell.isRevealed) {
+      if (cell.hasMine) return const Text('💣', style: TextStyle(fontSize: 24));
+      if (cell.adjacentMines > 0) {
+        return Text(
+          '${cell.adjacentMines}',
+          style: _getNumberStyle(cell.adjacentMines),
+        );
+      }
+    }
+    return null;
   }
 
   Widget _buildCounter(IconData icon, String text, Color color) {

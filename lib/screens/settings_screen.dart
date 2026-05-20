@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../main.dart'; 
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -57,6 +58,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'Apariencia',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              child: ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, ThemeMode currentMode, __) {
+                  bool isDarkMode = currentMode == ThemeMode.dark;
+                  return SwitchListTile(
+                    title: const Text('Modo Oscuro', style: TextStyle(fontWeight: FontWeight.bold)),
+                    secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                    value: isDarkMode,
+                    onChanged: (value) async {
+                      // Cambiamos el tema en toda la app instantáneamente
+                      themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                      // Guardamos la decisión para la próxima vez
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('isDarkMode', value);
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
             const Text(
               'Dificultad del Juego',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

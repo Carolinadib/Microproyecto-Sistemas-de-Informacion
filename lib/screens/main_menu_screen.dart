@@ -11,7 +11,7 @@ class MainMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey[50], // Fondo claro del menú
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Fondo claro del menú
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
